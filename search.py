@@ -45,7 +45,7 @@ def find_nearest_embeddings_euclidean(emb_query, selected_embs, k=3):
     
     return nearest_indices, nearest_distances
 
-class Kmeans:
+class Kmeans_faiss:
     def __init__(self, n_clusters=3, n_init=10, max_iter=300, tol=1e-4):
         self.n_clusters = n_clusters
         self.n_init = n_init
@@ -83,6 +83,59 @@ class Kmeans:
 
         return nearest_indices, nearest_distances
 
+
+class KMeans:
+    def __init__(self, n_clusters, max_iter=100):
+        self.n_clusters = n_clusters
+        self.max_iter = max_iter
+        self.centroids = None
+        self.labels_ = None
+
+    def fit(self, data):
+        # Khởi tạo các centroid ngẫu nhiên từ dữ liệu
+        self.centroids = data[np.random.choice(data.shape[0], self.n_clusters, replace=False)]
+
+        for _ in range(self.max_iter):
+            # Gán nhãn cho mỗi điểm dựa trên khoảng cách tới các centroid
+            self.labels_ = np.array([self._closest_centroid(point) for point in data])
+
+            # Tính các centroid mới
+            new_centroids = self._compute_centroids(data)
+
+            # Kiểm tra hội tụ (nếu các centroid không thay đổi)
+            if np.all(new_centroids == self.centroids):
+                break
+
+            self.centroids = new_centroids
+
+    def predict(self, data):
+        # Dự đoán nhãn cho dữ liệu mới
+        return np.array([self._closest_centroid(point) for point in data])
+
+    def _closest_centroid(self, point):
+        # Tìm centroid gần nhất cho một điểm
+        distances = np.linalg.norm(point - self.centroids, axis=1)
+        return np.argmin(distances)
+
+    def _compute_centroids(self, data):
+        # Tính các centroid mới dựa trên các điểm được gán
+        centroids = np.zeros((self.n_clusters, data.shape[1]))
+        for i in range(self.n_clusters):
+            points_in_cluster = data[self.labels_ == i]
+            if len(points_in_cluster) > 0:
+                centroids[i] = np.mean(points_in_cluster, axis=0)
+        return centroids
+
+    def find_nearest_embeddings(self, emb_query, selected_embs, k=3):
+        indice = self.predict(emb_query)
+        indices = self.predict(selected_embs)
+        cluster_indices = np.where(indices == indice)[0]
+        cluster_embeddings = selected_embs[cluster_indices]
+        
+        nearest_indices, nearest_distances = find_nearest_embeddings_euclidean(emb_query, cluster_embeddings, k)
+        nearest_indices = cluster_indices[nearest_indices]
+
+        return nearest_indices, nearest_distances
 if __name__ == '__main__':
     # Tạo dữ liệu mẫu
     fs = Faiss_(dim = 3)
@@ -97,48 +150,53 @@ if __name__ == '__main__':
     nearest_indices, nearest_distances = find_nearest_embeddings_euclidean(emb, embs, 3)
     print(nearest_indices, nearest_distances)    
 
-    kmeans = Kmeans(n_clusters=3)
-    # centroids, indices = kmeans.train(embs, save_path='weight/kmean.index')
-    kmeans.load('weight/kmean.index')
+    kf = Kmeans_faiss(n_clusters=3)
+    centroids, indices = kf.train(embs, save_path='weight/kmean.index')
+    kf.load('weight/kmean.index')
 
 
-    indice, indices = kmeans.predict(emb, embs)
+    indice, indices = kf.predict(emb, embs)
     print(indice, indices)
 
-    nearest_indices, nearest_distances = kmeans.find_nearest_embeddings(emb, embs, 3)
+    nearest_indices, nearest_distances = kf.find_nearest_embeddings(emb, embs, 3)
+    print(nearest_indices, nearest_distances)
+
+    kmean = KMeans(n_clusters=3)
+    kmean.fit(embs)
+    nearest_indices, nearest_distances = kmean.find_nearest_embeddings(emb, embs, 3)
     print(nearest_indices, nearest_distances)
 
 
-    # test data audio
-    import pandas as pd
-    embs = np.empty(shape=[0,6], dtype=np.float32)
-    df = pd.read_csv('datasets_mp3.csv')
-    filenames = df['Trimmed Filename']
-    Descriptions = df['Description']
-    for filename in filenames:
-        file_npy = filename+'.npy'
-        emb = np.load(f'data_npy/gallery/{file_npy}')
-        embs = np.append(embs, [emb], axis=0)
+    # # test data audio
+    # import pandas as pd
+    # embs = np.empty(shape=[0,6], dtype=np.float32)
+    # df = pd.read_csv('datasets_mp3.csv')
+    # filenames = df['Trimmed Filename']
+    # Descriptions = df['Description']
+    # for filename in filenames:
+    #     file_npy = filename+'.npy'
+    #     emb = np.load(f'data_npy/gallery/{file_npy}')
+    #     embs = np.append(embs, [emb], axis=0)
 
 
-    from feature_extract import Feature_audio
-    fa = Feature_audio(sr=44100)
-    filename = 'i5Q02YX2VTw_speech_male_0000_0100'
-    audio_query = f"data_wav/gallery/{filename}.wav"
-    emb_query = fa.all_feature(audio_query)
-    emb_query = emb_query.reshape(1, -1)
+    # from feature_extract import Feature_audio
+    # fa = Feature_audio(sr=44100)
+    # filename = 'i5Q02YX2VTw_speech_male_0000_0100'
+    # audio_query = f"data_wav/gallery/{filename}.wav"
+    # emb_query = fa.all_feature(audio_query)
+    # emb_query = emb_query.reshape(1, -1)
 
-    kmeans = Kmeans(n_clusters=3)
-    fs = Faiss_(dim = 6)
+    # kmeans = Kmeans_faiss(n_clusters=3)
+    # fs = Faiss_(dim = 6)
 
-    index, similarity_score = fs.faiss_search(embs, emb_query, k=3)
-    print(index, similarity_score)
+    # index, similarity_score = fs.faiss_search(embs, emb_query, k=3)
+    # print(index, similarity_score)
 
-    nearest_indices, nearest_distances = find_nearest_embeddings_euclidean(emb_query, embs, 3)
-    print(nearest_indices, nearest_distances)
+    # nearest_indices, nearest_distances = find_nearest_embeddings_euclidean(emb_query, embs, 3)
+    # print(nearest_indices, nearest_distances)
 
-    centroids, indices = kmeans.train(embs, save_path='weight/kmean.index')
-    kmeans.load('weight/kmean.index')
-    nearest_indices, nearest_distances = kmeans.find_nearest_embeddings(emb_query, embs, 3)
-    print(nearest_indices, nearest_distances)
+    # centroids, indices = kmeans.train(embs, save_path='weight/kmean.index')
+    # kmeans.load('weight/kmean.index')
+    # nearest_indices, nearest_distances = kmeans.find_nearest_embeddings(emb_query, embs, 3)
+    # print(nearest_indices, nearest_distances)
     

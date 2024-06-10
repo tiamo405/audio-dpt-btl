@@ -1,10 +1,10 @@
-from search import Faiss_, find_nearest_embeddings_euclidean, Kmeans
+from search import Faiss_, find_nearest_embeddings_euclidean, Kmeans_faiss, KMeans
 import numpy as np
 import pandas as pd
 from feature_extract import Feature_audio
 
 fs = Faiss_(dim = 6)
-km = Kmeans(n_clusters=3)
+kf = Kmeans_faiss(n_clusters=3)
 fa = Feature_audio(sr=44100)
 
 embs = np.empty(shape=[0,6], dtype=np.float32)
@@ -47,10 +47,23 @@ def query_audio(filename):
     print('-'*20)
     print('-'*20)
     print('-'*20)
+    print("Kmeans-faiss search")
+    kf.train(embs, save_path='weight/kmean.index')
+    kf.load('weight/kmean.index')
+    nearest_indices, nearest_distances = kf.find_nearest_embeddings(emb_query, embs, 3)
+    for i, index in enumerate(nearest_indices) :
+        print('Descriptions: ', Descriptions[index])
+        print(filenames[index])
+        print(nearest_distances[i])
+        print('-------------------')
+
+    print('-'*20)
+    print('-'*20)
+    print('-'*20)
     print("Kmeans search")
-    # km.train(embs, save_path='weight/kmean.index')
-    km.load('weight/kmean.index')
-    nearest_indices, nearest_distances = km.find_nearest_embeddings(emb_query, embs, 3)
+    kmean = KMeans(n_clusters=3)
+    kmean.fit(embs)
+    nearest_indices, nearest_distances = kmean.find_nearest_embeddings(emb_query, embs, 3)
     for i, index in enumerate(nearest_indices) :
         print('Descriptions: ', Descriptions[index])
         print(filenames[index])

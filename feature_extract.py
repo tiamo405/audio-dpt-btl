@@ -59,7 +59,7 @@ class Feature_audio:
 
 
 
-    def spec_cent(self,wav_file):
+    def spec_cent(self,wav_file): # trong tam pho
         audio_data, sample_rate = utils_audio.read_audio_by_librosa(wav_file, self.sr)
         cent = librosa.feature.spectral_centroid(y=audio_data, sr = sample_rate)[0]
         min_val = min(cent)
@@ -68,7 +68,7 @@ class Feature_audio:
         return np.mean(scaled_data)
         # return np.mean(cent)
 
-    def spec_bandwidth(self, wav_file):
+    def spec_bandwidth(self, wav_file): # do rong pho
         audio_data, sample_rate = utils_audio.read_audio_by_librosa(wav_file, self.sr)
         bw = librosa.feature.spectral_bandwidth(y=audio_data, sr = sample_rate)[0]
         min_val = min(bw)
@@ -76,7 +76,7 @@ class Feature_audio:
         scaled_data = [(x - min_val) / (max_val - min_val) for x in bw]
         return np.mean(scaled_data)
 
-    def rolloff(self, wav_file):
+    def rolloff(self, wav_file): # nguong tan so cat
         audio_data, sample_rate = utils_audio.read_audio_by_librosa(wav_file, self.sr)
         roll = librosa.feature.spectral_rolloff(y=audio_data, sr=sample_rate)[0]
         min_val = min(roll)
