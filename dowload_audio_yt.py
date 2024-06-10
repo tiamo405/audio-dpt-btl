@@ -88,7 +88,7 @@ def find_duplicate_filenames(file_names):
     return duplicates
 
 if __name__ =='__main__':
-    new_path = trim_audio(yt_url = 'https://www.youtube.com/watch?v=hbmf0bB38h0',initial = "00:15", final = "01:15", label = 'lecture', gender = 'male')
+    new_path = trim_audio(yt_url = 'https://www.youtube.com/watch?v=hbmf0bB38h0',initial = "00:15", final = "01:15", label = 'None', gender = 'None')
     print(new_path)
 
     # links = []

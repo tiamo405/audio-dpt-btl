@@ -159,5 +159,20 @@ cython_debug/
 #.idea/
 
 
+clean/
+data_npy/
+data_mp3/
+data_npy_test/
+data_npy_old/
+data_wav/
+
+
+
+
+*.wav
+*.mp3
+*.zip
+*.npy
+*.index
 
 
