@@ -172,7 +172,7 @@ data_wav/
 *.wav
 *.mp3
 *.zip
-*.npy
+
 *.index
 
 
